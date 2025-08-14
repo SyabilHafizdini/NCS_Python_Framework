@@ -12,7 +12,7 @@ A comprehensive test automation framework built on Python 3.x for Web, Mobile We
 ```bash
 # 1. Create virtual environment
 python -m venv venv_msvc
-venv_msvc\Scripts\activate.bat  # Windows
+venv_msvc\Scripts\activate  # Windows
 # source venv_msvc/bin/activate   # Linux/Mac
 
 # 2. Install dependencies
@@ -22,10 +22,10 @@ pip install -r requirements.txt
 ### Run Your First Test
 ```bash
 # Activate virtual environment
-venv_msvc\Scripts\activate.bat
+venv_msvc\Scripts\activate
 
 # Run example test
-python -m pytest examples/tests/example_login.py -v --alluredir=reports/allure-results
+venv_msvc/Scripts/python.exe -m behave tests/simple_demo.feature -f allure_behave.formatter:AllureFormatter -o reports/allure-results
 
 # View test report
 allure serve reports/allure-results
