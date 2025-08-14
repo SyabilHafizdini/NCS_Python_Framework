@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Demo Test Suite Configuration - Python QAF Framework -->
+<!-- Equivalent to Java QAF test-runner/demo.xml -->
+<suite name="SPF NGEN Demo Test Suite" verbose="1">
+    
+    <!-- Environment Configuration -->
+    <parameter name="env.code" value="DEV"/>
+    <parameter name="env.resources" value="resources;test_data/environment_config/DEV;execution_config/DEV"/>
+    
+    <!-- Execution Metadata -->
+    <parameter name="exec.name" value="Demo Execution - Python QAF"/>
+    <parameter name="exec.index" value="1"/>
+    
+    <!-- Test Selection Filters -->
+    <parameter name="include" value="{'groups':['demo','demo2']}"/>
+    
+    <!-- Browser and WebDriver Configuration -->
+    <parameter name="driver.name" value="chromeDriver"/>
+    <parameter name="chrome.options" value="--no-sandbox,--disable-dev-shm-usage,--start-maximized"/>
+    
+    <!-- Reporting Configuration -->
+    <parameter name="selenium.wait.timeout" value="30"/>
+    <parameter name="test.results.dir" value="test-results"/>
+    <parameter name="json.report.root.dir" value="test-results"/>
+    
+    <!-- BDD Test Configuration -->
+    <test name="Demo Feature Tests">
+        <!-- Test Factory for BDD Feature File Discovery -->
+        <classes>
+            <class name="qaf.pytest.BDDTestFactory">
+                <methods>
+                    <include name=".*"/>
+                </methods>
+            </class>
+        </classes>
+        
+        <!-- Test Listeners -->
+        <listeners>
+            <listener class-name="qaf.automation.core.TestListener"/>
+            <listener class-name="qaf.automation.util.JSONReporter"/>
+        </listeners>
+    </test>
+    
+    <!-- Feature File Discovery Configuration -->
+    <parameter name="scenario.file.loc" value="tests"/>
+    <parameter name="bdd.include.scenario.pattern" value=".*\.feature"/>
+    
+    <!-- Tag-based Test Selection -->
+    <groups>
+        <define name="demo">
+            <include name="demo"/>
+            <include name="smoke"/>
+        </define>
+        
+        <define name="demo2">  
+            <include name="demo2"/>
+            <include name="regression"/>
+        </define>
+        
+        <run>
+            <include name="demo"/>
+            <include name="demo2"/>
+        </run>
+    </groups>
+    
+</suite>

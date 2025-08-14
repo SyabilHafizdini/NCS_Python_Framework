@@ -1,0 +1,6 @@
+TestCaseId,Search_Criteria,Search_Value,Filter_Type,Filter_Value,Expected_Results,Description
+CM009_005_001,Customer Name,Test Customer,Status,Active,1,Search by customer name with active filter
+CM009_005_002,Email,@testcompany.com,Type,Corporate,2,Search by email domain with corporate filter
+CM009_005_003,Phone,555-,Status,All,5,Search by phone prefix with all status
+CM009_005_004,Address,Business St,City,Business City,3,Search by address with city filter
+CM009_005_005,Customer ID,CUST001,Status,Inactive,1,Search by customer ID with inactive filter

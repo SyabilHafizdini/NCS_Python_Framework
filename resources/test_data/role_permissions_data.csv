@@ -1,0 +1,6 @@
+TestCaseId,User_Role,Allowed_Features,Restricted_Features,Permission_Level,Description
+CM014_006_001,Standard User,"Profile Management,Data View","User Management,System Admin",Read-Write,Standard user permissions
+CM014_006_002,Business User,"Profile Management,Data View,Report Generation","User Management,System Admin",Read-Write-Report,Business user permissions
+CM014_006_003,Admin User,"Profile Management,Data View,Report Generation,User Management","System Configuration",Admin,Administrator permissions
+CM014_006_004,Read Only User,"Data View","Profile Management,User Management,System Admin",Read-Only,Read-only user permissions
+CM014_006_005,System Admin,"All Features","None",Full-Admin,System administrator permissions

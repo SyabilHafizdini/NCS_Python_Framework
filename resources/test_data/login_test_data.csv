@@ -1,0 +1,9 @@
+TestType,TestCaseId,Username,Password,Expected_Result,Description
+demo,DEMO_008_001,testuser,TestPass123!,dashboard,Valid user login
+demo,DEMO_008_002,invalid_user,wrong_password,error_message,Invalid credentials
+demo,DEMO_008_003,admin_user,AdminPass123!,admin_dashboard,Admin user login
+demo,DEMO_008_004,readonly_user,ReadPass123!,readonly_dashboard,Read-only user login
+demo,DEMO_008_005,"","",validation_error,Empty credentials validation
+regression,REG_001,business_user,BusinessPass123!,business_dashboard,Business user access
+regression,REG_002,expired_user,ExpiredPass123!,account_expired,Expired account handling
+regression,REG_003,locked_user,LockedPass123!,account_locked,Locked account handling
