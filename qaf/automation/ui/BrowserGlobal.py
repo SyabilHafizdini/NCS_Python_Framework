@@ -159,7 +159,7 @@ def open_browser(url: str):
     if _driver_instance is not None:
         _driver_instance.quit()
     
-    service = Service(ChromeDriverManager().install())
+    service = Service("drivers/chromedriver.exe")
     options = Options()
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')

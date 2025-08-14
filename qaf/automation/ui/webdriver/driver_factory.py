@@ -162,11 +162,18 @@ def __web_driver_manager(driver_name):
     driver_path = CM().get_bundle().get(f'webdriver..{driver_name}.driver')
 
     if not driver_path:
-        class_name = f'webdriver_manager.{driver_name}.{driver_name_caps}DriverManager'
-        driver_path = load_class(class_name)().install()
-        #driver_path = driver_path.rsplit('/', 1)[0]
-        # os.environ["PATH"] += os.pathsep + driver_path
-        # load_class(class_name)
+        # Use local driver from drivers/ directory instead of webdriver-manager
+        if driver_name == 'chrome':
+            driver_path = 'drivers/chromedriver.exe'
+        elif driver_name == 'firefox' or driver_name == 'gecko':
+            driver_path = 'drivers/geckodriver.exe'
+        elif driver_name == 'edge':
+            driver_path = 'drivers/msedgedriver.exe'
+        else:
+            # Fallback to webdriver-manager for other drivers
+            class_name = f'webdriver_manager.{driver_name}.{driver_name_caps}DriverManager'
+            driver_path = load_class(class_name)().install()
+        
         CM().get_bundle().set_property(f'webdriver..{driver_name}.driver',driver_path)
 
     return load_class('selenium.webdriver.{driver_name}.service.Service'.format(driver_name=driver_name))(driver_path)

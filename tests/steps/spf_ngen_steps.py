@@ -55,7 +55,7 @@ def get_driver_instance(context):
         # Load environment configuration
         config = load_environment_config(current_env) if PATTERN_LOCATOR_AVAILABLE else {}
         
-        service = Service(ChromeDriverManager().install())
+        service = Service("drivers/chromedriver.exe")
         options = webdriver.ChromeOptions()
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')

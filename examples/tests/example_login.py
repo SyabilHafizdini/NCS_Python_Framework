@@ -18,7 +18,7 @@ class TestLoginExample:
     def setup_method(self):
         """Setup method called before each test method"""
         with allure.step("Initialize WebDriver"):
-            service = Service(ChromeDriverManager().install())
+            service = Service("drivers/chromedriver.exe")
             options = webdriver.ChromeOptions()
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
