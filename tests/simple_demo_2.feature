@@ -11,13 +11,13 @@ Feature: SPF NGEN Login Test
   @smoke
   @TestCaseId:DEMO_001
   @PRIORITY:CRITICAL
-  Scenario: Valid User Login Syabil
+  Scenario: Valid User Login Syabil from Demo 3
     Given I navigate to the SPF NGEN login page
     When I enter username "standard_user" using pattern locator
     And I enter password "secret_sauce" using pattern locator  
     And I click the Login button using pattern locator
     Then I should be redirected to the dashboard
-    # And I should see welcome message on dashboard
+    And I should see welcome message on dashboard
 
 
   # @demo

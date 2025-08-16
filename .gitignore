@@ -110,6 +110,8 @@ desktop.ini
 .env.*
 config.local.*
 secrets.*
+.claude
+CLAUDE.md
 
 # QAF framework specific
 qaf_python.egg-info/
@@ -155,7 +157,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be added to the global gitignore or merged into this project gitignore.
