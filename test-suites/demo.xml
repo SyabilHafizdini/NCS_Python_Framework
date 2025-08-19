@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<suite name="demo" version="1.0">
+    <description>Comprehensive test suite created via manager</description>
+    <parameters>
+        <parameter name="env" value="UAT"/>
+        <parameter name="browser" value="chrome"/>
+        <parameter name="timeout" value="30"/>
+    </parameters>
+    <test name="comprehensive-test-suite-tests">
+        <groups>
+            <run>
+                <include name="syabil"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.simple_demo.feature"/>
+        </classes>
+    </test>
+</suite>

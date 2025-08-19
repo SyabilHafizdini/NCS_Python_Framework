@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="mobile-tests" version="1.0">
+    <description>Mobile application testing suite</description>
+    
+    <parameters>
+        <parameter name="platform" value="Android"/>
+        <parameter name="device_name" value="Pixel_4"/>
+        <parameter name="app_package" value="com.saucelabs.mydemoapp.rn"/>
+        <parameter name="automation_name" value="UiAutomator2"/>
+        <parameter name="app_activity" value=".MainActivity"/>
+    </parameters>
+    
+    <execution stopOnFirstFailure="true">
+        <timeout suite="2400" scenario="480" step="45"/>
+        <retry maxAttempts="2" delaySeconds="15" retryOnFailure="true"/>
+        
+        <environment default="mobile_test">
+            <variable name="SCREENSHOT_FREQUENCY" value="all"/>
+            <variable name="VIDEO_RECORDING" value="true"/>
+            
+            <profile name="mobile_test">
+                <property name="DEVICE_CLEANUP" value="true"/>
+                <property name="APP_RESET" value="true"/>
+                <property name="NETWORK_SIMULATION" value="false"/>
+            </profile>
+        </environment>
+    </execution>
+    
+    <test name="mobile-app-tests">
+        <groups>
+            <run>
+                <include name="mobile"/>
+                <include name="smoke"/>
+                <exclude name="web"/>
+                <exclude name="api"/>
+            </run>
+        </groups>
+        
+        <classes>
+            <class name="tests.mobile.login"/>
+            <class name="tests.mobile.navigation"/>
+            <class name="tests.mobile.product_browsing"/>
+            <class name="tests.mobile.checkout"/>
+        </classes>
+    </test>
+</suite>

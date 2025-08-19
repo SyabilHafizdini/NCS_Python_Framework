@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="advanced-regression-suite" version="1.0">
+    <description>
+        Advanced regression test suite demonstrating advanced execution configuration options
+        including timeout management, retry logic, and environment-specific settings.
+    </description>
+    
+    <!-- Global parameters for the test suite -->
+    <parameters>
+        <parameter name="base_url" value="https://saucedemo.com"/>
+        <parameter name="browser" value="chrome"/>
+        <parameter name="implicit_wait" value="10"/>
+    </parameters>
+    
+    <!-- Advanced execution configuration -->
+    <execution stopOnFirstFailure="false" continueOnError="false" maxParallelThreads="2">
+        
+        <!-- Timeout configuration for different execution levels -->
+        <timeout suite="7200" scenario="600" step="60"/>
+        
+        <!-- Retry configuration for failed scenarios -->
+        <retry maxAttempts="2" delaySeconds="30" retryOnFailure="true" retryOnError="true"/>
+        
+        <!-- Environment configuration with variables and profiles -->
+        <environment default="staging">
+            
+            <!-- Global environment variables -->
+            <variable name="LOG_LEVEL" value="INFO"/>
+            <variable name="SCREENSHOT_ON_FAILURE" value="true"/>
+            <variable name="HEADLESS_MODE" value="false"/>
+            
+            <!-- Environment-specific variables -->
+            <variable name="BASE_URL" value="https://test.saucedemo.com" environment="test"/>
+            <variable name="BASE_URL" value="https://staging.saucedemo.com" environment="staging"/>
+            <variable name="BASE_URL" value="https://saucedemo.com" environment="production"/>
+            
+            <variable name="DB_CONNECTION" value="test-db.internal:5432" environment="test"/>
+            <variable name="DB_CONNECTION" value="staging-db.internal:5432" environment="staging"/>
+            <variable name="DB_CONNECTION" value="prod-db.internal:5432" environment="production"/>
+            
+            <!-- Environment profiles with inheritance -->
+            <profile name="base">
+                <property name="WAIT_TIMEOUT" value="30"/>
+                <property name="PAGE_LOAD_TIMEOUT" value="60"/>
+                <property name="ELEMENT_WAIT_TIMEOUT" value="10"/>
+            </profile>
+            
+            <profile name="test" extends="base">
+                <property name="DEBUG_MODE" value="true"/>
+                <property name="VERBOSE_LOGGING" value="true"/>
+                <property name="SCREENSHOT_FREQUENCY" value="all"/>
+                <property name="DATA_RESET" value="true"/>
+            </profile>
+            
+            <profile name="staging" extends="base">
+                <property name="DEBUG_MODE" value="false"/>
+                <property name="VERBOSE_LOGGING" value="false"/>
+                <property name="SCREENSHOT_FREQUENCY" value="failure"/>
+                <property name="DATA_RESET" value="false"/>
+            </profile>
+            
+            <profile name="production" extends="base">
+                <property name="DEBUG_MODE" value="false"/>
+                <property name="VERBOSE_LOGGING" value="false"/>
+                <property name="SCREENSHOT_FREQUENCY" value="failure"/>
+                <property name="PERFORMANCE_MONITORING" value="true"/>
+                <property name="ERROR_REPORTING" value="true"/>
+            </profile>
+            
+        </environment>
+        
+    </execution>
+    
+    <!-- Test configuration -->
+    <test name="advanced-regression-tests">
+        
+        <!-- Tag-based filtering -->
+        <groups>
+            <run>
+                <include name="regression"/>
+                <include name="smoke"/>
+                <exclude name="experimental"/>
+                <exclude name="manual"/>
+            </run>
+        </groups>
+        
+        <!-- Feature file paths -->
+        <classes>
+            <class name="tests.saucedemo_login"/>
+            <class name="tests.saucedemo_checkout"/>
+            <class name="tests.saucedemo_inventory"/>
+            <class name="tests.api_tests"/>
+        </classes>
+        
+    </test>
+    
+</suite>

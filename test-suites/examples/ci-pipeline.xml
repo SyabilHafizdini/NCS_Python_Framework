@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="ci-pipeline" version="1.0">
+    <description>CI/CD pipeline optimized test suite for automated builds</description>
+    
+    <parameters>
+        <parameter name="base_url" value="https://ci.saucedemo.com"/>
+        <parameter name="browser" value="headless-chrome"/>
+        <parameter name="parallel_threads" value="4"/>
+        <parameter name="ci_build" value="${CI_BUILD_NUMBER}"/>
+    </parameters>
+    
+    <execution stopOnFirstFailure="true" continueOnError="false">
+        <timeout suite="1200" scenario="180" step="30"/>
+        <retry maxAttempts="1" delaySeconds="5" retryOnFailure="false"/>
+        
+        <environment default="ci">
+            <variable name="CI_MODE" value="true"/>
+            <variable name="HEADLESS" value="true"/>
+            <variable name="OUTPUT_FORMAT" value="junit,json"/>
+            
+            <profile name="ci">
+                <property name="SCREENSHOT_ON_FAILURE_ONLY" value="true"/>
+                <property name="VIDEO_RECORDING" value="false"/>
+                <property name="LOG_LEVEL" value="WARNING"/>
+                <property name="FAST_EXECUTION" value="true"/>
+            </profile>
+        </environment>
+    </execution>
+    
+    <test name="ci-tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="critical"/>
+                <exclude name="slow"/>
+                <exclude name="manual"/>
+                <exclude name="experimental"/>
+            </run>
+        </groups>
+        
+        <classes>
+            <class name="tests.login"/>
+            <class name="tests.api.health_check"/>
+            <class name="tests.core_functionality"/>
+        </classes>
+    </test>
+</suite>

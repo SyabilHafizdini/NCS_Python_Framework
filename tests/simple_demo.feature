@@ -8,10 +8,10 @@ Feature: SPF NGEN Login Test
   So that I can verify the application works
 
   @demo
-  @smoke
+  @syabil
   @TestCaseId:DEMO_001
   @PRIORITY:CRITICAL
-  Scenario: Valid User Login Syabil
+  Scenario: Hehe Valid User Login Fresh Test
     Given I navigate to the SPF NGEN login page
     When I enter username "standard_user" using pattern locator
     And I enter password "secret_sauce" using pattern locator  

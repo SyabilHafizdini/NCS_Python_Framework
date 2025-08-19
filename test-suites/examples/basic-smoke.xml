@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="basic-smoke" version="1.0">
+    <description>Basic smoke test suite for quick validation</description>
+    
+    <parameters>
+        <parameter name="base_url" value="https://www.saucedemo.com"/>
+        <parameter name="browser" value="chrome"/>
+        <parameter name="timeout" value="30"/>
+    </parameters>
+    
+    <test name="smoke-tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <exclude name="manual"/>
+                <exclude name="experimental"/>
+            </run>
+        </groups>
+        
+        <classes>
+            <class name="tests.login"/>
+            <class name="tests.inventory"/>
+            <class name="tests.cart"/>
+        </classes>
+    </test>
+</suite>

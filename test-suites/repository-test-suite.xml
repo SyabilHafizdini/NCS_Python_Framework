@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<suite name="repository-test-suite" version="1.0">
+    <description>Test suite created via repository</description>
+    <parameters>
+        <parameter name="env" value="DEV"/>
+        <parameter name="browser" value="chrome"/>
+    </parameters>
+    <test name="repository-test-suite-tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="demo"/>
+                <exclude name="slow"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.simple_demo.feature"/>
+        </classes>
+    </test>
+</suite>

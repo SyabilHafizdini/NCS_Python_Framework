@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="cross-browser" version="1.0">
+    <description>Cross-browser compatibility testing suite</description>
+    
+    <parameters>
+        <parameter name="base_url" value="https://demo.saucedemo.com"/>
+        <parameter name="screenshot_comparison" value="true"/>
+        <parameter name="browser_matrix" value="chrome,firefox,safari,edge"/>
+        <parameter name="resolution" value="1920x1080"/>
+    </parameters>
+    
+    <execution stopOnFirstFailure="false" continueOnError="true">
+        <timeout suite="3600" scenario="300" step="45"/>
+        <retry maxAttempts="1" delaySeconds="10" retryOnFailure="false"/>
+        
+        <environment default="cross_browser">
+            <variable name="VISUAL_TESTING" value="true"/>
+            <variable name="BROWSER_LOGS" value="true"/>
+            
+            <profile name="cross_browser">
+                <property name="SCREENSHOT_ALL_STEPS" value="true"/>
+                <property name="PERFORMANCE_METRICS" value="true"/>
+                <property name="ACCESSIBILITY_CHECK" value="true"/>
+            </profile>
+        </environment>
+    </execution>
+    
+    <test name="compatibility-tests">
+        <groups>
+            <run>
+                <include name="ui"/>
+                <include name="cross_browser"/>
+                <exclude name="api"/>
+                <exclude name="mobile"/>
+                <exclude name="performance"/>
+            </run>
+        </groups>
+        
+        <classes>
+            <class name="tests.ui.layout"/>
+            <class name="tests.ui.forms"/>
+            <class name="tests.ui.navigation"/>
+            <class name="tests.ui.responsive"/>
+        </classes>
+    </test>
+</suite>

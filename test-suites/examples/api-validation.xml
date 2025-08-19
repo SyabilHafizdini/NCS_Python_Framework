@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="api-validation" version="1.0">
+    <description>API endpoint validation and testing</description>
+    
+    <parameters>
+        <parameter name="api_base_url" value="https://api.saucedemo.com"/>
+        <parameter name="api_version" value="v1"/>
+        <parameter name="authentication" value="bearer_token"/>
+        <parameter name="rate_limit_delay" value="0.5"/>
+    </parameters>
+    
+    <execution stopOnFirstFailure="false">
+        <timeout suite="1800" scenario="300" step="30"/>
+        <retry maxAttempts="3" delaySeconds="5" retryOnError="true"/>
+        
+        <environment default="test">
+            <variable name="MOCK_DATABASE" value="true"/>
+            <variable name="LOG_API_REQUESTS" value="true"/>
+            
+            <profile name="test">
+                <property name="DB_RESET_BETWEEN_TESTS" value="true"/>
+                <property name="CACHE_DISABLED" value="true"/>
+            </profile>
+        </environment>
+    </execution>
+    
+    <test name="api-tests">
+        <groups>
+            <run>
+                <include name="api"/>
+                <include name="integration"/>
+                <exclude name="ui"/>
+                <exclude name="mobile"/>
+            </run>
+        </groups>
+        
+        <classes>
+            <class name="tests.api.authentication"/>
+            <class name="tests.api.user_management"/>
+            <class name="tests.api.product_catalog"/>
+            <class name="tests.api.order_processing"/>
+        </classes>
+    </test>
+</suite>

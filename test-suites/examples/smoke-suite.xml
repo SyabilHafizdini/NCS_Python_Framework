@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="smoke-test-suite" version="1.0">
+    <description>Smoke test suite for critical functionality validation</description>
+    
+    <parameters>
+        <parameter name="env" value="UAT"/>
+        <parameter name="browser" value="chrome"/>
+        <parameter name="timeout" value="30"/>
+    </parameters>
+    
+    <test name="smoke-tests">
+        <groups>
+            <run>
+                <include name="smoke"/>
+                <include name="critical"/>
+                <exclude name="slow"/>
+            </run>
+        </groups>
+        
+        <classes>
+            <class name="tests.simple_demo.feature"/>
+            <class name="tests.automation_library_demo.feature"/>
+        </classes>
+    </test>
+</suite>

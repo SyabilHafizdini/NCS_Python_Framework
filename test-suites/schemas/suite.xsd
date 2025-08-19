@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://qaf-python.org/suite"
+           xmlns:tns="http://qaf-python.org/suite"
+           elementFormDefault="qualified">
+
+    <!-- Root element: suite -->
+    <xs:element name="suite" type="tns:SuiteType"/>
+
+    <!-- Suite type definition -->
+    <xs:complexType name="SuiteType">
+        <xs:sequence>
+            <xs:element name="description" type="xs:string" minOccurs="0"/>
+            <xs:element name="parameters" type="tns:ParametersType" minOccurs="0"/>
+            <xs:element name="execution" type="tns:ExecutionType" minOccurs="0"/>
+            <xs:element name="test" type="tns:TestType" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="version" type="xs:string" default="1.0"/>
+    </xs:complexType>
+
+    <!-- Parameters type definition -->
+    <xs:complexType name="ParametersType">
+        <xs:sequence>
+            <xs:element name="parameter" type="tns:ParameterType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Execution configuration type definition -->
+    <xs:complexType name="ExecutionType">
+        <xs:sequence>
+            <xs:element name="timeout" type="tns:TimeoutType" minOccurs="0"/>
+            <xs:element name="retry" type="tns:RetryType" minOccurs="0"/>
+            <xs:element name="environment" type="tns:EnvironmentType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="stopOnFirstFailure" type="xs:boolean" default="false"/>
+        <xs:attribute name="continueOnError" type="xs:boolean" default="false"/>
+        <xs:attribute name="maxParallelThreads" type="xs:positiveInteger" default="1"/>
+    </xs:complexType>
+
+    <!-- Timeout configuration type definition -->
+    <xs:complexType name="TimeoutType">
+        <xs:attribute name="suite" type="xs:positiveInteger" default="3600"/>
+        <xs:attribute name="scenario" type="xs:positiveInteger" default="300"/>
+        <xs:attribute name="step" type="xs:positiveInteger" default="30"/>
+    </xs:complexType>
+
+    <!-- Retry configuration type definition -->
+    <xs:complexType name="RetryType">
+        <xs:attribute name="maxAttempts" type="xs:positiveInteger" default="1"/>
+        <xs:attribute name="delaySeconds" type="xs:positiveInteger" default="5"/>
+        <xs:attribute name="retryOnFailure" type="xs:boolean" default="false"/>
+        <xs:attribute name="retryOnError" type="xs:boolean" default="true"/>
+    </xs:complexType>
+
+    <!-- Environment configuration type definition -->
+    <xs:complexType name="EnvironmentType">
+        <xs:sequence>
+            <xs:element name="variable" type="tns:EnvironmentVariableType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="profile" type="tns:ProfileType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="default" type="xs:string" default="test"/>
+    </xs:complexType>
+
+    <!-- Environment variable type definition -->
+    <xs:complexType name="EnvironmentVariableType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="environment" type="xs:string" minOccurs="0"/>
+    </xs:complexType>
+
+    <!-- Profile type definition -->
+    <xs:complexType name="ProfileType">
+        <xs:sequence>
+            <xs:element name="property" type="tns:PropertyType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="extends" type="xs:string" minOccurs="0"/>
+    </xs:complexType>
+
+    <!-- Property type definition -->
+    <xs:complexType name="PropertyType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Parameter type definition -->
+    <xs:complexType name="ParameterType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Test type definition -->
+    <xs:complexType name="TestType">
+        <xs:sequence>
+            <xs:element name="groups" type="tns:GroupsType" minOccurs="0"/>
+            <xs:element name="classes" type="tns:ClassesType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Groups type definition -->
+    <xs:complexType name="GroupsType">
+        <xs:sequence>
+            <xs:element name="run" type="tns:RunType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Run type definition -->
+    <xs:complexType name="RunType">
+        <xs:sequence>
+            <xs:element name="include" type="tns:TagType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="exclude" type="tns:TagType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Tag type definition -->
+    <xs:complexType name="TagType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <!-- Classes type definition -->
+    <xs:complexType name="ClassesType">
+        <xs:sequence>
+            <xs:element name="class" type="tns:ClassType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <!-- Class type definition (represents feature file paths) -->
+    <xs:complexType name="ClassType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+</xs:schema>
