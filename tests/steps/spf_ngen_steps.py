@@ -27,6 +27,22 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Add the project root to Python path to import QAF modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+# Import automation library from tests directory
+try:
+    from tests.automation_library import BrowserGlobal as BG
+    from tests.automation_library import Web
+    LIBRARY_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Automation library not available: {e}")
+    LIBRARY_AVAILABLE = False
+
+
+def _ensure_library_available():
+    """Ensure automation library is available"""
+    if not LIBRARY_AVAILABLE:
+        raise Exception("Automation library is not available")
+
+
 # Import environment configuration
 try:
     from test_data.environment_config import (
@@ -332,6 +348,38 @@ def step_verify_remain_on_login(context):
         
         # URL verification logged automatically by environment
 
+@then('Web: Input-Text Value:"{input_value}" Field:"{field_name}"')
+def input_text_web(context, input_value, field_name):
+  _ensure_library_available()
+  with allure.step(f"Web: Input-Text Value:{input_value} Field:{field_name}"):
+    Web.set_page_name("loginPage")
+    Web.input_text_pattern_reflection(context, input_value, field_name)
+
+@given('Web: Open-Browser-And-Maximise Url:"{url}"')
+def open_browser_and_maximize(context, url):
+  with allure.step(f"Navigate to {url}"):
+    driver = get_driver_instance(context)
+    # Using SauceDemo as working example
+    driver.get(url)
+
+@then('Web: Wait-For-2-Seconds')
+def wait_for_seconds(context):
+  with allure.step("Web: Wait-For-2-Seconds"):
+    time.sleep(2)
+
+@then('Web: Click-Element Pattern:"{pattern_name}" Field:"{field_name}"')
+def click_element_pattern_web(context, pattern_name, field_name):
+  _ensure_library_available()
+  with allure.step(f"Web: Click-Element Pattern:{pattern_name} Field:{field_name}"):
+    Web.set_page_name("loginPage")
+    Web.click_element_pattern_reflection(context, pattern_name, field_name)
+
+@then('Web: Business verification: I verify "{text}"')
+def business_verification_with_screenshot(context, text: str):
+  _ensure_library_available()
+  Web.set_page_name("loginPage")
+  Web.business_verification_with_screenshot(context, text)
+  
 # =============================================================================
 # CLEANUP STEPS
 # =============================================================================

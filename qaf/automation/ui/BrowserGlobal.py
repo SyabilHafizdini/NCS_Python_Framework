@@ -136,14 +136,14 @@ def _find_elements(locator: str) -> List[Any]:
         return driver.find_elements(By.XPATH, locator)
 
 
-def _take_screenshot_bytes() -> bytes:
+def _take_screenshot_bytes(context) -> bytes:
     """Take screenshot and return as bytes"""
-    return _get_driver().get_screenshot_as_png()
+    return context.driver.get_screenshot_as_png()
 
 
-def _attach_screenshot(name: str = "Screenshot"):
+def _attach_screenshot(context, name: str = "Screenshot"):
     """Attach screenshot to Allure report"""
-    screenshot = _take_screenshot_bytes()
+    screenshot = _take_screenshot_bytes(context)
     allure.attach(screenshot, name=name, attachment_type=allure.attachment_type.PNG)
 
 

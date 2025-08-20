@@ -36,6 +36,13 @@ from .case_converter import CaseConverter
 from .field_parser import FieldParser
 from .variable_substitution import VariableSubstitution
 
+try:
+    from selenium.webdriver.common.by import By
+    from selenium.common.exceptions import NoSuchElementException
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
+
 
 class PatternEngine:
     """
@@ -195,6 +202,9 @@ class PatternEngine:
         # Set field variables for pattern substitution (matching Java implementation)
         get_bundle().set_property("loc.auto.fieldName", clean_field_name)
         get_bundle().set_property("loc.auto.fieldInstance", field_instance)
+        
+        # Set label association variable (${loc.auto.forValue})
+        self._set_label_association_variable(clean_field_name)
         
         # Get pattern template for element type
         pattern_key = f"{self.pattern_code}.pattern.{field_type}"
@@ -390,6 +400,72 @@ class PatternEngine:
     def element(self, page: str, field_name: str, field_value: str = None) -> str:
         """Generate locator for generic element"""
         return self._get_locator(page, "element", field_name, field_value)
+    
+    def _find_label_association(self, field_name: str) -> Optional[str]:
+        """
+        Find label elements associated with the field name and extract 'for' attribute
+        
+        Args:
+            field_name: Field name to find label associations for
+            
+        Returns:
+            The 'for' attribute value from associated label, or None if not found
+        """
+        if not SELENIUM_AVAILABLE:
+            print("Warning: Selenium not available for label association lookup")
+            return None
+        
+        try:
+            # Try to get the current WebDriver instance
+            from tests.automation_library.BrowserGlobal import _get_driver
+            driver = _get_driver()
+            
+            # Try multiple label finding strategies
+            label_locators = [
+                f"//label[contains(text(), '{field_name}')]",
+                f"//label[text()='{field_name}']",
+                f"//label[@title='{field_name}']",
+                f"//label[contains(@class, '{field_name.lower()}')]"
+            ]
+            
+            for locator in label_locators:
+                try:
+                    labels = driver.find_elements(By.XPATH, locator)
+                    for label in labels:
+                        for_value = label.get_attribute('for')
+                        if for_value:
+                            print(f"Found label association: {field_name} -> for='{for_value}'")
+                            return for_value
+                except NoSuchElementException:
+                    continue
+            
+            print(f"No label association found for field: {field_name}")
+            return None
+            
+        except Exception as e:
+            print(f"Error finding label association for {field_name}: {e}")
+            return None
+    
+    def _set_label_association_variable(self, field_name: str) -> str:
+        """
+        Set the ${loc.auto.forValue} variable based on label association
+        
+        Args:
+            field_name: Field name to find label association for
+            
+        Returns:
+            The for value that was set, or empty string if none found
+        """
+        for_value = self._find_label_association(field_name)
+        
+        if for_value:
+            # Set the bundle property for pattern substitution
+            get_bundle().set_property("loc.auto.forValue", for_value)
+            return for_value
+        else:
+            # Clear the property if no association found
+            get_bundle().set_property("loc.auto.forValue", "")
+            return ""
 
 
 # Singleton instance for global access

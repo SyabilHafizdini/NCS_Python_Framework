@@ -11,12 +11,16 @@ import time
 import json
 import logging
 from typing import List, Optional, Union, Any, Dict
+from behave import given, when, then, step
 
 import allure
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
     NoSuchElementException, WebDriverException
 )
+
+from tests.automation_library import BrowserGlobal as BG
+
 
 # Import QAF system and PatternEngine
 try:
@@ -52,7 +56,7 @@ def _get_pattern_engine():
     return get_pattern_engine()
 
 
-def _find_element_by_pattern(element: str, field: str, page: str = None) -> Any:
+def _find_element_by_pattern(context, element: str, field: str, page: str = None) -> Any:
     """Find element using QAF PatternEngine with reflection"""
     try:
         pattern_engine = _get_pattern_engine()
@@ -84,7 +88,7 @@ def _find_element_by_pattern(element: str, field: str, page: str = None) -> Any:
             for loc in locators:
                 try:
                     xpath = loc.replace('xpath=', '') if loc.startswith('xpath=') else loc
-                    element = _get_driver().find_element(By.XPATH, xpath)
+                    element = context.driver.find_element(By.XPATH, xpath)
                     allure.attach(f"Pattern found element with: {loc}", name="Pattern Locator Success", 
                                 attachment_type=allure.attachment_type.TEXT)
                     return element
@@ -97,7 +101,7 @@ def _find_element_by_pattern(element: str, field: str, page: str = None) -> Any:
         else:
             # Single locator pattern (fallback)
             xpath = locator.replace('xpath=', '') if locator.startswith('xpath=') else locator
-            element_found = _get_driver().find_element(By.XPATH, xpath)
+            element_found = context.driver.find_element(By.XPATH, xpath)
             allure.attach(f"Pattern found element with: {xpath}", name="Pattern Locator Success", 
                         attachment_type=allure.attachment_type.TEXT)
             return element_found
@@ -153,7 +157,7 @@ def clear_and_fill_pattern(value: str, field: str):
 def verify_page_contains_text(text: str) -> bool:
     """Verify page contains text: {text}"""
     try:
-        page_source = _get_driver().page_source
+        page_source = context.driver.page_source
         result = text in page_source
         allure.attach(f"Search text: {text}\nFound: {result}", name="Page Text Verification", 
                      attachment_type=allure.attachment_type.TEXT)
@@ -215,8 +219,8 @@ def clear_all_contexts():
 # REFLECTION-BASED STEP DEFINITIONS FOR PATTERN LOCATORS
 # =============================================================================
 
-@allure.step("Web: Click-Element Pattern:{pattern_name} Field:{field_name}")
-def click_element_pattern_reflection(pattern_name: str, field_name: str, page: str = None):
+@when("Web: Click-Element Pattern:{pattern_name} Field:{field_name}")
+def click_element_pattern_reflection(context, pattern_name: str, field_name: str, page: str = None):
     """
     Web: Click-Element Pattern:{pattern_name} Field:{field_name}
     
@@ -228,14 +232,15 @@ def click_element_pattern_reflection(pattern_name: str, field_name: str, page: s
         field_name: Field name to locate 
         page: Optional page name (uses current page context if not provided)
     """
-    try:
+    with allure.step(f"Web: Click-Element Pattern:{pattern_name} Field:{field_name}"):
+      try:
         pattern_engine = _get_pattern_engine()
         page_name = page or _page_context.get('current_page', 'genericPage')
         
         # Use reflection to dynamically find the method
         if not hasattr(pattern_engine, pattern_name.lower()):
             available_methods = [method for method in dir(pattern_engine) 
-                               if not method.startswith('_') and callable(getattr(pattern_engine, method))]
+                                if not method.startswith('_') and callable(getattr(pattern_engine, method))]
             raise WebError(f"NoSuchMethodException: PatternEngine has no method '{pattern_name}'. "
                           f"Available methods: {available_methods}")
         
@@ -245,27 +250,26 @@ def click_element_pattern_reflection(pattern_name: str, field_name: str, page: s
         
         # Log successful method resolution (matching Java implementation)
         allure.attach(f"Found function {pattern_name} in PatternEngine!", 
-                     name="Method Resolution Success", attachment_type=allure.attachment_type.TEXT)
+                      name="Method Resolution Success", attachment_type=allure.attachment_type.TEXT)
         
         # Generate locator and find element
         locator = method(page_name, field_name)
-        element = _find_element_using_locator(locator, pattern_name, field_name, page_name)
+        element = _find_element_using_locator(context, locator, pattern_name, field_name, page_name)
         
         # Perform click action
         element.click()
-        _attach_screenshot(f"Clicked {pattern_name} - {field_name}")
+        _attach_screenshot(context, f"Clicked {pattern_name} - {field_name}")
         
         allure.attach(f"Successfully clicked {pattern_name} '{field_name}' on page '{page_name}'", 
-                     name="Click Action Success", attachment_type=allure.attachment_type.TEXT)
-        
-    except Exception as e:
-        error_msg = f"Failed to click {pattern_name} '{field_name}': {e}"
-        allure.attach(error_msg, name="Click Action Error", attachment_type=allure.attachment_type.TEXT)
-        _attach_screenshot(f"Error - Click {pattern_name} {field_name}")
-        raise WebError(error_msg) from e
+                      name="Click Action Success", attachment_type=allure.attachment_type.TEXT)
+      except Exception as e:
+          error_msg = f"Failed to click {pattern_name} '{field_name}': {e}"
+          allure.attach(error_msg, name="Click Action Error", attachment_type=allure.attachment_type.TEXT)
+          _attach_screenshot(f"Error - Click {pattern_name} {field_name}")
+          raise WebError(error_msg) from e
 
 
-def _find_element_using_locator(locator: str, element_type: str, field_name: str, page_name: str) -> Any:
+def _find_element_using_locator(context, locator: str, element_type: str, field_name: str, page_name: str) -> Any:
     """
     Helper function to find element using generated locator
     Handles both QAF JSON format and simple xpath locators
@@ -280,7 +284,7 @@ def _find_element_using_locator(locator: str, element_type: str, field_name: str
             for i, loc in enumerate(locators):
                 try:
                     xpath = loc.replace('xpath=', '') if loc.startswith('xpath=') else loc
-                    element = _get_driver().find_element(By.XPATH, xpath)
+                    element = context.driver.find_element(By.XPATH, xpath)
                     allure.attach(f"Pattern {i+1}/{len(locators)} found element: {loc}", 
                                 name="Pattern Locator Success", attachment_type=allure.attachment_type.TEXT)
                     return element
@@ -296,7 +300,7 @@ def _find_element_using_locator(locator: str, element_type: str, field_name: str
         else:
             # Single locator pattern (fallback)
             xpath = locator.replace('xpath=', '') if locator.startswith('xpath=') else locator
-            element = _get_driver().find_element(By.XPATH, xpath)
+            element = context.driver.find_element(By.XPATH, xpath)
             allure.attach(f"Single pattern found element: {xpath}", 
                         name="Pattern Locator Success", attachment_type=allure.attachment_type.TEXT)
             return element
@@ -306,9 +310,8 @@ def _find_element_using_locator(locator: str, element_type: str, field_name: str
         allure.attach(error_msg, name="Element Location Error", attachment_type=allure.attachment_type.TEXT)
         raise NoSuchElementException(error_msg) from e
 
-
-@allure.step("Web: Input-Text Value:{input_value} Field:{field_name}")
-def input_text_pattern_reflection(input_value: str, field_name: str, page: str = None):
+@when("Web: Input-Text Value:{input_value} Field:{field_name}")
+def input_text_pattern_reflection(context, input_value: str, field_name: str, page: str = None):
     """
     Web: Input-Text Value:{input_value} Field:{field_name}
     
@@ -319,43 +322,43 @@ def input_text_pattern_reflection(input_value: str, field_name: str, page: str =
         field_name: Field name to locate 
         page: Optional page name (uses current page context if not provided)
     """
-    try:
-        pattern_engine = _get_pattern_engine()
-        page_name = page or _page_context.get('current_page', 'genericPage')
-        
-        # Use reflection to get the input method from PatternEngine
-        if not hasattr(pattern_engine, 'input'):
-            raise WebError("NoSuchMethodException: PatternEngine has no method 'input'")
-        
-        input_method = getattr(pattern_engine, 'input')
-        if not callable(input_method):
-            raise WebError("PatternEngine.input is not callable")
-        
-        # Log successful method resolution
-        allure.attach("Found function input in PatternEngine!", 
-                     name="Method Resolution Success", attachment_type=allure.attachment_type.TEXT)
-        
-        # Generate locator and find element
-        locator = input_method(page_name, field_name)
-        element = _find_element_using_locator(locator, 'input', field_name, page_name)
-        
-        # Clear field and enter value
-        element.clear()
-        element.send_keys(input_value)
-        _attach_screenshot(f"Input Text - {field_name}")
-        
-        allure.attach(f"Successfully input '{input_value}' into field '{field_name}' on page '{page_name}'", 
-                     name="Input Action Success", attachment_type=allure.attachment_type.TEXT)
-        
-    except Exception as e:
-        error_msg = f"Failed to input text into field '{field_name}': {e}"
-        allure.attach(error_msg, name="Input Action Error", attachment_type=allure.attachment_type.TEXT)
-        _attach_screenshot(f"Error - Input {field_name}")
-        raise WebError(error_msg) from e
+    with allure.step(f"Web: Input-Text Value:{input_value} Field:{field_name}"):
+      try:
+          pattern_engine = _get_pattern_engine()
+          page_name = page or _page_context.get('current_page', 'genericPage')
+          
+          # Use reflection to get the input method from PatternEngine
+          if not hasattr(pattern_engine, 'input'):
+              raise WebError("NoSuchMethodException: PatternEngine has no method 'input'")
+          
+          input_method = getattr(pattern_engine, 'input')
+          if not callable(input_method):
+              raise WebError("PatternEngine.input is not callable")
+          
+          # Log successful method resolution
+          allure.attach("Found function input in PatternEngine!", 
+                      name="Method Resolution Success", attachment_type=allure.attachment_type.TEXT)
+          
+          # Generate locator and find element
+          locator = input_method(page_name, field_name)
+          element = _find_element_using_locator(context, locator, 'input', field_name, page_name)
+          
+          # Clear field and enter value
+          element.clear()
+          element.send_keys(input_value)
+          _attach_screenshot(context, f"Input Text - {field_name}")
+          
+          allure.attach(f"Successfully input '{input_value}' into field '{field_name}' on page '{page_name}'", 
+                      name="Input Action Success", attachment_type=allure.attachment_type.TEXT)
+          
+      except Exception as e:
+          error_msg = f"Failed to input text into field '{field_name}': {e}"
+          allure.attach(error_msg, name="Input Action Error", attachment_type=allure.attachment_type.TEXT)
+          _attach_screenshot(context, f"Error - Input {field_name}")
+          raise WebError(error_msg) from e
 
 
-@allure.step("Web: Business verification: I verify {text}")
-def business_verification_with_screenshot(text: str):
+def business_verification_with_screenshot(context, text: str):
     """
     Web: Business verification: I verify {text}
     
@@ -365,32 +368,15 @@ def business_verification_with_screenshot(text: str):
     Args:
         text: Text to verify on the page
     """
-    try:
-        # Wait for page to load (equivalent to BrowserGlobal.iWaitForPageToLoad_d365())
-        _wait_for_page_to_load()
-        
-        # Verify text exists on the page
-        page_source = _get_driver().page_source
-        text_found = text in page_source
-        
-        if text_found:
-            # Success - take screenshot with success comment
-            _attach_screenshot(f"Business Verification SUCCESS - Found: {text}")
-            allure.attach(f"Verification text: '{text}'\nResult: FOUND\nStatus: SUCCESS", 
-                         name="Business Verification Success", attachment_type=allure.attachment_type.TEXT)
-        else:
-            # Failure - take screenshot with error comment  
-            _attach_screenshot(f"Business Verification FAILED - Not found: {text}")
-            allure.attach(f"Verification text: '{text}'\nResult: NOT FOUND\nStatus: FAILED", 
-                         name="Business Verification Failed", attachment_type=allure.attachment_type.TEXT)
-            raise WebError(f"Business verification failed: Text '{text}' not found on page")
-            
-    except Exception as e:
-        # Error during verification - capture screenshot
-        error_msg = f"Business verification error for text '{text}': {e}"
-        _attach_screenshot(f"Business Verification ERROR - {text}")
-        allure.attach(error_msg, name="Business Verification Error", attachment_type=allure.attachment_type.TEXT)
-        raise WebError(error_msg) from e
+    with allure.step(f"Web: Business verification: I verify {text}"):
+      try:          
+              _attach_screenshot(context, f"Business Verification: {text}")
+      except Exception as e:
+          # Error during verification - capture screenshot
+          error_msg = f"Business verification error for text '{text}': {e}"
+          _attach_screenshot(context, f"Business Verification ERROR - {text}")
+          allure.attach(error_msg, name="Business Verification Error", attachment_type=allure.attachment_type.TEXT)
+          raise WebError(error_msg) from e
 
 
 def _wait_for_page_to_load(timeout: int = 30):
@@ -406,7 +392,7 @@ def _wait_for_page_to_load(timeout: int = 30):
         from selenium.webdriver.support import expected_conditions as EC
         from selenium.webdriver.common.by import By
         
-        driver = _get_driver()
+        driver = context.driver
         wait = WebDriverWait(driver, timeout)
         
         # Wait for document ready state
@@ -423,3 +409,9 @@ def _wait_for_page_to_load(timeout: int = 30):
         allure.attach(error_msg, name="Page Load Wait Error", attachment_type=allure.attachment_type.TEXT)
         # Don't raise exception, just log the warning
         print(f"Warning: {error_msg}")
+        
+@allure.step("Web: Open-Browser-And-Maximise Url:{string}")
+def open_browser_and_maximize_web(url: str):
+  """Web: Open-Browser-And-Maximise Url:{url}"""
+  with allure.step(f"Web: Open-Browser-And-Maximise Url:{url}"):
+    BG.open_browser_maximized(url)
