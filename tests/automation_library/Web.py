@@ -18,15 +18,14 @@ from selenium.common.exceptions import (
     NoSuchElementException, WebDriverException
 )
 
-# Import QAF system (pattern locator temporarily disabled for new implementation)
+# Import QAF system and PatternEngine
 try:
     from qaf.automation.core import get_bundle
+    from qaf.automation.ui.util.pattern_engine import get_pattern_engine
     QAF_AVAILABLE = True
 except ImportError:
     QAF_AVAILABLE = False
-
-# Pattern locator temporarily disabled for new implementation
-get_pattern_locator = None
+    get_pattern_engine = None
 
 # Import BrowserGlobal functions from same directory
 try:
@@ -46,38 +45,40 @@ class WebError(Exception):
     pass
 
 
-def _get_pattern_locator():
-    """Get QAF pattern locator instance"""
-    if not QAF_AVAILABLE:
-        raise WebError("QAF Pattern Locator system not available")
-    return get_pattern_locator()
+def _get_pattern_engine():
+    """Get QAF PatternEngine instance"""
+    if not QAF_AVAILABLE or not get_pattern_engine:
+        raise WebError("QAF PatternEngine system not available")
+    return get_pattern_engine()
 
 
 def _find_element_by_pattern(element: str, field: str, page: str = None) -> Any:
-    """Find element using QAF pattern locator system"""
+    """Find element using QAF PatternEngine with reflection"""
     try:
-        pattern_locator = _get_pattern_locator()
+        pattern_engine = _get_pattern_engine()
         page_name = page or _page_context.get('current_page', 'genericPage')
         
-        # Map element types to pattern locator methods
-        element_methods = {
-            'button': pattern_locator.button,
-            'link': pattern_locator.link,
-            'input': pattern_locator.input,
-            'text': pattern_locator.text,
-            'element': pattern_locator.element
-        }
+        # Use reflection to dynamically call PatternEngine methods
+        element_type = element.lower()
         
-        method = element_methods.get(element.lower())
-        if not method:
-            raise WebError(f"Unsupported element type: {element}")
+        # Check if the PatternEngine has the method for this element type
+        if not hasattr(pattern_engine, element_type):
+            raise WebError(f"PatternEngine does not support element type: {element_type}")
         
-        # Generate locator using pattern system
+        method = getattr(pattern_engine, element_type)
+        if not callable(method):
+            raise WebError(f"PatternEngine.{element_type} is not callable")
+        
+        allure.attach(f"Found function {element_type} in PatternEngine!", 
+                     name="Pattern Method Resolution", attachment_type=allure.attachment_type.TEXT)
+        
+        # Generate locator using reflection-based pattern system
         locator = method(page_name, field)
         
-        # Handle JSON locator arrays (multiple pattern fallbacks)
-        if isinstance(locator, str) and locator.startswith('['):
-            locators = json.loads(locator)
+        # Handle QAF JSON format: {"locator":[...], "desc":"..."}
+        if isinstance(locator, str) and locator.startswith('{"locator":'):
+            qaf_data = json.loads(locator)
+            locators = qaf_data.get('locator', [])
             last_exception = None
             
             for loc in locators:
@@ -91,10 +92,10 @@ def _find_element_by_pattern(element: str, field: str, page: str = None) -> Any:
                     last_exception = e
                     continue
             
-            raise last_exception or NoSuchElementException(f"No pattern locator found element: {page_name}.{element}.{field}")
+            raise last_exception or NoSuchElementException(f"No pattern locator found element: {page_name}.{element_type}.{field}")
         
         else:
-            # Single locator pattern
+            # Single locator pattern (fallback)
             xpath = locator.replace('xpath=', '') if locator.startswith('xpath=') else locator
             element_found = _get_driver().find_element(By.XPATH, xpath)
             allure.attach(f"Pattern found element with: {xpath}", name="Pattern Locator Success", 
@@ -208,3 +209,99 @@ def clear_all_contexts():
     """Clear all stored contexts"""
     global _page_context
     _page_context.clear()
+
+
+# =============================================================================
+# REFLECTION-BASED STEP DEFINITIONS FOR PATTERN LOCATORS
+# =============================================================================
+
+@allure.step("Web: Click-Element Pattern:{pattern_name} Field:{field_name}")
+def click_element_pattern_reflection(pattern_name: str, field_name: str, page: str = None):
+    """
+    Web: Click-Element Pattern:{pattern_name} Field:{field_name}
+    
+    Reflection-based step definition that dynamically calls PatternEngine methods
+    based on the pattern_name parameter.
+    
+    Args:
+        pattern_name: Element type name (button, link, checkbox, etc.)
+        field_name: Field name to locate 
+        page: Optional page name (uses current page context if not provided)
+    """
+    try:
+        pattern_engine = _get_pattern_engine()
+        page_name = page or _page_context.get('current_page', 'genericPage')
+        
+        # Use reflection to dynamically find the method
+        if not hasattr(pattern_engine, pattern_name.lower()):
+            available_methods = [method for method in dir(pattern_engine) 
+                               if not method.startswith('_') and callable(getattr(pattern_engine, method))]
+            raise WebError(f"NoSuchMethodException: PatternEngine has no method '{pattern_name}'. "
+                          f"Available methods: {available_methods}")
+        
+        method = getattr(pattern_engine, pattern_name.lower())
+        if not callable(method):
+            raise WebError(f"PatternEngine.{pattern_name} is not callable")
+        
+        # Log successful method resolution (matching Java implementation)
+        allure.attach(f"Found function {pattern_name} in PatternEngine!", 
+                     name="Method Resolution Success", attachment_type=allure.attachment_type.TEXT)
+        
+        # Generate locator and find element
+        locator = method(page_name, field_name)
+        element = _find_element_using_locator(locator, pattern_name, field_name, page_name)
+        
+        # Perform click action
+        element.click()
+        _attach_screenshot(f"Clicked {pattern_name} - {field_name}")
+        
+        allure.attach(f"Successfully clicked {pattern_name} '{field_name}' on page '{page_name}'", 
+                     name="Click Action Success", attachment_type=allure.attachment_type.TEXT)
+        
+    except Exception as e:
+        error_msg = f"Failed to click {pattern_name} '{field_name}': {e}"
+        allure.attach(error_msg, name="Click Action Error", attachment_type=allure.attachment_type.TEXT)
+        _attach_screenshot(f"Error - Click {pattern_name} {field_name}")
+        raise WebError(error_msg) from e
+
+
+def _find_element_using_locator(locator: str, element_type: str, field_name: str, page_name: str) -> Any:
+    """
+    Helper function to find element using generated locator
+    Handles both QAF JSON format and simple xpath locators
+    """
+    try:
+        # Handle QAF JSON format: {"locator":[...], "desc":"..."}
+        if isinstance(locator, str) and locator.startswith('{"locator":'):
+            qaf_data = json.loads(locator)
+            locators = qaf_data.get('locator', [])
+            last_exception = None
+            
+            for i, loc in enumerate(locators):
+                try:
+                    xpath = loc.replace('xpath=', '') if loc.startswith('xpath=') else loc
+                    element = _get_driver().find_element(By.XPATH, xpath)
+                    allure.attach(f"Pattern {i+1}/{len(locators)} found element: {loc}", 
+                                name="Pattern Locator Success", attachment_type=allure.attachment_type.TEXT)
+                    return element
+                except NoSuchElementException as e:
+                    allure.attach(f"Pattern {i+1}/{len(locators)} failed: {loc}", 
+                                name="Pattern Locator Attempt", attachment_type=allure.attachment_type.TEXT)
+                    last_exception = e
+                    continue
+            
+            raise last_exception or NoSuchElementException(
+                f"No pattern locator found element: {page_name}.{element_type}.{field_name}")
+        
+        else:
+            # Single locator pattern (fallback)
+            xpath = locator.replace('xpath=', '') if locator.startswith('xpath=') else locator
+            element = _get_driver().find_element(By.XPATH, xpath)
+            allure.attach(f"Single pattern found element: {xpath}", 
+                        name="Pattern Locator Success", attachment_type=allure.attachment_type.TEXT)
+            return element
+            
+    except Exception as e:
+        error_msg = f"Element location failed for {page_name}.{element_type}.{field_name}: {e}"
+        allure.attach(error_msg, name="Element Location Error", attachment_type=allure.attachment_type.TEXT)
+        raise NoSuchElementException(error_msg) from e
