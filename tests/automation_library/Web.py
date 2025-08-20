@@ -352,3 +352,74 @@ def input_text_pattern_reflection(input_value: str, field_name: str, page: str =
         allure.attach(error_msg, name="Input Action Error", attachment_type=allure.attachment_type.TEXT)
         _attach_screenshot(f"Error - Input {field_name}")
         raise WebError(error_msg) from e
+
+
+@allure.step("Web: Business verification: I verify {text}")
+def business_verification_with_screenshot(text: str):
+    """
+    Web: Business verification: I verify {text}
+    
+    Business verification step with page load waiting and screenshot capture.
+    Equivalent to BrowserGlobal.iWaitForPageToLoad_d365() and iTakeScreenshotWithComment()
+    
+    Args:
+        text: Text to verify on the page
+    """
+    try:
+        # Wait for page to load (equivalent to BrowserGlobal.iWaitForPageToLoad_d365())
+        _wait_for_page_to_load()
+        
+        # Verify text exists on the page
+        page_source = _get_driver().page_source
+        text_found = text in page_source
+        
+        if text_found:
+            # Success - take screenshot with success comment
+            _attach_screenshot(f"Business Verification SUCCESS - Found: {text}")
+            allure.attach(f"Verification text: '{text}'\nResult: FOUND\nStatus: SUCCESS", 
+                         name="Business Verification Success", attachment_type=allure.attachment_type.TEXT)
+        else:
+            # Failure - take screenshot with error comment  
+            _attach_screenshot(f"Business Verification FAILED - Not found: {text}")
+            allure.attach(f"Verification text: '{text}'\nResult: NOT FOUND\nStatus: FAILED", 
+                         name="Business Verification Failed", attachment_type=allure.attachment_type.TEXT)
+            raise WebError(f"Business verification failed: Text '{text}' not found on page")
+            
+    except Exception as e:
+        # Error during verification - capture screenshot
+        error_msg = f"Business verification error for text '{text}': {e}"
+        _attach_screenshot(f"Business Verification ERROR - {text}")
+        allure.attach(error_msg, name="Business Verification Error", attachment_type=allure.attachment_type.TEXT)
+        raise WebError(error_msg) from e
+
+
+def _wait_for_page_to_load(timeout: int = 30):
+    """
+    Wait for page to load completely
+    Equivalent to BrowserGlobal.iWaitForPageToLoad_d365()
+    
+    Args:
+        timeout: Maximum time to wait in seconds
+    """
+    try:
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        from selenium.webdriver.common.by import By
+        
+        driver = _get_driver()
+        wait = WebDriverWait(driver, timeout)
+        
+        # Wait for document ready state
+        wait.until(lambda driver: driver.execute_script("return document.readyState") == "complete")
+        
+        # Additional wait for any dynamic content
+        time.sleep(1)
+        
+        allure.attach(f"Page load completed within {timeout} seconds", 
+                     name="Page Load Wait", attachment_type=allure.attachment_type.TEXT)
+        
+    except Exception as e:
+        error_msg = f"Page load wait failed after {timeout} seconds: {e}"
+        allure.attach(error_msg, name="Page Load Wait Error", attachment_type=allure.attachment_type.TEXT)
+        # Don't raise exception, just log the warning
+        print(f"Warning: {error_msg}")

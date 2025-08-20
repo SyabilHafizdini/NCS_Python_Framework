@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from tests.automation_library.Web import click_element_pattern_reflection, input_text_pattern_reflection, WebError
+from tests.automation_library.Web import click_element_pattern_reflection, input_text_pattern_reflection, business_verification_with_screenshot, WebError
 
 
 class TestWebReflection(unittest.TestCase):
@@ -191,6 +191,69 @@ class TestWebReflection(unittest.TestCase):
         mock_allure.attach.assert_any_call(
             "Found function input in PatternEngine!", 
             name="Method Resolution Success", 
+            attachment_type="text/plain"
+        )
+    
+    @patch('tests.automation_library.Web._get_driver')
+    @patch('tests.automation_library.Web._attach_screenshot')
+    @patch('tests.automation_library.Web.allure')
+    @patch('tests.automation_library.Web.time.sleep')
+    def test_business_verification_success(self, mock_sleep, mock_allure, mock_attach_screenshot, mock_get_driver):
+        """Test successful business verification with screenshot capture"""
+        # Mock driver
+        mock_driver = MagicMock()
+        mock_driver.page_source = "Welcome to the application! Login successful."
+        mock_driver.execute_script.return_value = "complete"
+        mock_get_driver.return_value = mock_driver
+        
+        # Mock allure
+        mock_allure.attach = MagicMock()
+        mock_allure.attachment_type.TEXT = "text/plain"
+        
+        # Test successful verification
+        business_verification_with_screenshot("Login successful")
+        
+        # Verify screenshot was taken
+        mock_attach_screenshot.assert_called_once_with("Business Verification SUCCESS - Found: Login successful")
+        
+        # Verify success logging
+        mock_allure.attach.assert_any_call(
+            "Verification text: 'Login successful'\nResult: FOUND\nStatus: SUCCESS", 
+            name="Business Verification Success", 
+            attachment_type="text/plain"
+        )
+    
+    @patch('tests.automation_library.Web._get_driver')
+    @patch('tests.automation_library.Web._attach_screenshot')
+    @patch('tests.automation_library.Web.allure')
+    @patch('tests.automation_library.Web.time.sleep')
+    def test_business_verification_failure(self, mock_sleep, mock_allure, mock_attach_screenshot, mock_get_driver):
+        """Test business verification failure with screenshot capture"""
+        # Mock driver
+        mock_driver = MagicMock()
+        mock_driver.page_source = "Error: Invalid credentials"
+        mock_driver.execute_script.return_value = "complete"
+        mock_get_driver.return_value = mock_driver
+        
+        # Mock allure
+        mock_allure.attach = MagicMock()
+        mock_allure.attachment_type.TEXT = "text/plain"
+        
+        # Test failed verification
+        with self.assertRaises(WebError) as context:
+            business_verification_with_screenshot("Login successful")
+        
+        # Verify error message
+        self.assertIn("Business verification failed", str(context.exception))
+        self.assertIn("Login successful", str(context.exception))
+        
+        # Verify failure screenshot was taken (may be called multiple times due to error handling)
+        mock_attach_screenshot.assert_any_call("Business Verification FAILED - Not found: Login successful")
+        
+        # Verify failure logging
+        mock_allure.attach.assert_any_call(
+            "Verification text: 'Login successful'\nResult: NOT FOUND\nStatus: FAILED", 
+            name="Business Verification Failed", 
             attachment_type="text/plain"
         )
 
