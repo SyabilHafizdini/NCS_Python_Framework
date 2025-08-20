@@ -9,5 +9,5 @@ jmespath~=1.0.0
 setuptools~=65.5.1
 simpleeval==0.9.13
 # Rich reporting
-allure-pytest~=2.13.2
+allure-pytest~=2.15.0
 pytest-html~=4.1.1
