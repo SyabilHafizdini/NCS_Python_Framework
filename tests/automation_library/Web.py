@@ -18,13 +18,15 @@ from selenium.common.exceptions import (
     NoSuchElementException, WebDriverException
 )
 
-# Import QAF pattern locator system
+# Import QAF system (pattern locator temporarily disabled for new implementation)
 try:
-    from qaf.automation.ui.util.pattern_locator import get_pattern_locator
     from qaf.automation.core import get_bundle
     QAF_AVAILABLE = True
 except ImportError:
     QAF_AVAILABLE = False
+
+# Pattern locator temporarily disabled for new implementation
+get_pattern_locator = None
 
 # Import BrowserGlobal functions from same directory
 try:

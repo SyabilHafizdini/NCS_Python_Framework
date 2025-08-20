@@ -19,4 +19,6 @@
 #  SOFTWARE.
 
 from . import qaf_wd_expected_conditions
-from . import pattern_locator
+from . import case_converter
+from . import field_parser
+from . import variable_substitution

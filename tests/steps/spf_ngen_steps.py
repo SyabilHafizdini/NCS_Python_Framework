@@ -27,33 +27,25 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Add the project root to Python path to import QAF modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# Import QAF pattern locator system
+# Import environment configuration
 try:
-    from qaf.automation.ui.util.pattern_locator import get_pattern_locator
     from test_data.environment_config import (
         load_environment_config,
         get_test_user,
         get_environment_url
     )
-    PATTERN_LOCATOR_AVAILABLE = True
+    ENVIRONMENT_CONFIG_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: QAF pattern locator not available: {e}")
-    PATTERN_LOCATOR_AVAILABLE = False
-
-# Import environment helper for auto-logging
-try:
-    from tests.environment import log_pattern_locator_usage
-except ImportError:
-    def log_pattern_locator_usage(*args, **kwargs):
-        pass  # Fallback if environment helper not available
+    print(f"Warning: Environment config not available: {e}")
+    ENVIRONMENT_CONFIG_AVAILABLE = False
 
 current_env = "DEV"
 
 def get_driver_instance(context):
-    """Get or create WebDriver instance with QAF integration"""
+    """Get or create WebDriver instance"""
     if not hasattr(context, 'driver') or context.driver is None:
         # Load environment configuration
-        config = load_environment_config(current_env) if PATTERN_LOCATOR_AVAILABLE else {}
+        config = load_environment_config(current_env) if ENVIRONMENT_CONFIG_AVAILABLE else {}
         
         service = Service("drivers/chromedriver.exe")
         options = webdriver.ChromeOptions()
@@ -63,91 +55,15 @@ def get_driver_instance(context):
         
         context.driver = webdriver.Chrome(service=service, options=options)
         context.wait = WebDriverWait(context.driver, 30)
-        
-        # Initialize pattern locator system (simplified for demo)
-        if hasattr(context, 'pattern_locator'):
-            pass  # Already initialized
-        else:
-            try:
-                if PATTERN_LOCATOR_AVAILABLE:
-                    context.pattern_locator = get_pattern_locator()
-                    
-                    # Load SauceDemo specific locators into the bundle
-                    from qaf.automation.core import get_bundle
-                    from qaf.automation.util.property_util import PropertyUtil
-                    
-                    saucedemo_file = 'resources/locators/saucedemo.properties'
-                    if os.path.exists(saucedemo_file):
-                        prop_util = PropertyUtil()
-                        prop_util.load(saucedemo_file)
-                        
-                        # Add saucedemo properties to the bundle
-                        bundle = get_bundle()
-                        for key in prop_util.keys():
-                            bundle.set_property(key, prop_util.get_string(key))
-                        
-                        print("QAF Pattern Locator System loaded successfully with SauceDemo locators")
-                    else:
-                        print("QAF Pattern Locator System loaded successfully (no SauceDemo locators)")
-                else:
-                    context.pattern_locator = None
-                    print("QAF Pattern Locator not available, using fallback")
-            except Exception as e:
-                print(f"Pattern Locator initialization failed: {e}")
-                context.pattern_locator = None
     
     return context.driver
 
 
-def find_element_with_pattern_locator(context, page_name, element_type, field_name, field_value=None):
+def find_element_with_hardcoded_locator(context, page_name, element_type, field_name):
     """
-    Find element using QAF pattern locator system with fallback to hardcoded locators
+    Find element using hardcoded locators as fallback
     """
-    # Try QAF pattern locator first if available
-    if PATTERN_LOCATOR_AVAILABLE and context.pattern_locator:
-        try:
-            # Get appropriate locator method from pattern locator
-            locator_method = getattr(context.pattern_locator, element_type)
-            
-            # Generate locator using pattern framework
-            if field_value:
-                locator = locator_method(page_name, field_name, field_value)
-            else:
-                locator = locator_method(page_name, field_name)
-            
-            # Auto-log pattern locator usage
-            log_pattern_locator_usage(page_name, element_type, field_name, locator, "generated")
-            
-            # Handle JSON locator arrays (multiple pattern fallbacks from QAF framework)
-            if isinstance(locator, str) and locator.startswith('['):
-                locators = json.loads(locator)
-                last_exception = None
-                
-                for loc in locators:
-                    try:
-                        xpath = loc.replace('xpath=', '') if loc.startswith('xpath=') else loc
-                        element = context.driver.find_element(By.XPATH, xpath)
-                        log_pattern_locator_usage(page_name, element_type, field_name, loc, "found")
-                        return element
-                    except NoSuchElementException as e:
-                        last_exception = e
-                        continue
-                
-                # If no pattern worked, fall through to hardcoded fallback
-                log_pattern_locator_usage(page_name, element_type, field_name, str(locators), "failed - falling back to hardcoded")
-            
-            else:
-                # Single locator pattern
-                xpath = locator.replace('xpath=', '') if locator.startswith('xpath=') else locator
-                element = context.driver.find_element(By.XPATH, xpath)
-                log_pattern_locator_usage(page_name, element_type, field_name, xpath, "found")
-                return element
-                
-        except Exception as e:
-            # Log the error and fall back to hardcoded locators
-            log_pattern_locator_usage(page_name, element_type, field_name, "N/A", f"error: {str(e)}, falling back to hardcoded")
-    
-    # Fallback to hardcoded SauceDemo locators
+    # Hardcoded SauceDemo locators
     hardcoded_locators = {
         "loginPage": {
             "input": {
@@ -169,7 +85,6 @@ def find_element_with_pattern_locator(context, page_name, element_type, field_na
     try:
         xpath = hardcoded_locators[page_name][element_type][field_name]
         element = context.driver.find_element(By.XPATH, xpath)
-        log_pattern_locator_usage(page_name, element_type, field_name, xpath, "found via hardcoded fallback")
         return element
     except (KeyError, NoSuchElementException) as e:
         # Final fallback - basic locator attempt
@@ -184,12 +99,10 @@ def find_element_with_pattern_locator(context, page_name, element_type, field_na
         if locator_key in basic_locators:
             xpath = basic_locators[locator_key]
             element = context.driver.find_element(By.XPATH, xpath)
-            log_pattern_locator_usage(page_name, element_type, field_name, xpath, "found via basic fallback")
             return element
         
         # No fallback available
         error_msg = f"No locator found for {page_name}.{element_type}.{field_name}"
-        log_pattern_locator_usage(page_name, element_type, field_name, "N/A", f"error: {error_msg}")
         raise NoSuchElementException(error_msg)
 
 # =============================================================================
@@ -245,7 +158,7 @@ def step_enter_username(context, username):
     """Enter username using pattern locator"""
     with allure.step(f"Enter username: {username} using pattern locator"):
         # Use QAF pattern locator system
-        username_field = find_element_with_pattern_locator(context, "loginPage", "input", "Username")
+        username_field = find_element_with_hardcoded_locator(context, "loginPage", "input", "Username")
         username_field.clear()
         username_field.send_keys(username)
         
@@ -258,7 +171,7 @@ def step_enter_password(context, password):
     """Enter password using pattern locator"""
     with allure.step("Enter password using pattern locator"):
         # Use QAF pattern locator system
-        password_field = find_element_with_pattern_locator(context, "loginPage", "input", "Password")
+        password_field = find_element_with_hardcoded_locator(context, "loginPage", "input", "Password")
         password_field.clear()
         password_field.send_keys(password)
         
@@ -271,7 +184,7 @@ def step_click_login_button(context):
     """Click login button using pattern locator"""
     with allure.step("Click Login button using pattern locator"):
         # Use QAF pattern locator system - should find hardcoded locator first
-        login_button = find_element_with_pattern_locator(context, "loginPage", "button", "Login")
+        login_button = find_element_with_hardcoded_locator(context, "loginPage", "button", "Login")
         
         # Debug: Print current URL before click
         print(f"URL before login click: {context.driver.current_url}")
@@ -318,7 +231,7 @@ def step_click_button(context, button_name):
         
         try:
             # Use QAF pattern locator system
-            button_element = find_element_with_pattern_locator(context, page_context, "button", button_name)
+            button_element = find_element_with_hardcoded_locator(context, page_context, "button", button_name)
             button_element.click()
             
             # Button clicked successfully - logged automatically by environment
@@ -384,21 +297,21 @@ def step_verify_element_visible(context, element_description="welcome message on
         try:
             if "welcome message on dashboard" in element_description.lower():
                 # Use pattern locator for dashboard welcome message
-                element = find_element_with_pattern_locator(context, "dashboardPage", "text", "Welcome")
+                element = find_element_with_hardcoded_locator(context, "dashboardPage", "text", "Welcome")
                 assert element.is_displayed(), f"Dashboard welcome message not visible"
                 
                 # Pattern locator usage logged automatically
                 
             elif "navigation menu" in element_description.lower():
                 # Use pattern locator for navigation menu
-                element = find_element_with_pattern_locator(context, "navigationPage", "text", "Navigation")
+                element = find_element_with_hardcoded_locator(context, "navigationPage", "text", "Navigation")
                 assert element.is_displayed(), f"Navigation menu not visible"
                 
                 # Pattern locator usage logged automatically
                 
             else:
                 # Try generic pattern locator approach
-                element = find_element_with_pattern_locator(context, "genericPage", "text", element_description)
+                element = find_element_with_hardcoded_locator(context, "genericPage", "text", element_description)
                 assert element.is_displayed(), f"Element not visible: {element_description}"
                 
                 # Pattern locator usage logged automatically

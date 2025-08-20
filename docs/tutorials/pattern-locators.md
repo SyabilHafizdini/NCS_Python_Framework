@@ -1,4 +1,6 @@
-# Pattern Locators Tutorial
+# Pattern Locators Tutorial - UNDER RENOVATION
+
+**⚠️ NOTICE: This pattern locator system is currently being upgraded to match the Java QAF framework architecture exactly. Please refer to the new implementation guide in `.claude/specs/pattern-locator-system/` for the latest design.**
 
 Learn how to use the QAF Pattern Locator System for dynamic, maintainable element identification.
 
@@ -18,7 +20,7 @@ Pattern locators are a powerful QAF feature that generates XPath locators dynami
 
 ### 1. Pattern Configuration File
 
-`resources/locators/loc_pattern.properties` - defines XPath templates:
+`resources/locators/locPattern.properties` - defines XPath templates:
 
 ```properties
 # Button patterns with multiple fallback strategies
@@ -55,7 +57,7 @@ env.resources=resources
 
 ### 3. Pattern Locator API
 
-The framework provides `PatternLocator` class with element-specific methods:
+The framework provides `PatternEngine` class with element-specific methods:
 
 ```python
 from qaf.automation.ui.util.pattern_locator import get_pattern_locator

@@ -41,14 +41,16 @@ from selenium.common.exceptions import (
     StaleElementReferenceException, WebDriverException
 )
 
-# Import QAF pattern locator system
+# Import QAF system (pattern locator temporarily disabled for new implementation)
 try:
-    from qaf.automation.ui.util.pattern_locator import get_pattern_locator
     from qaf.automation.core import get_bundle
     from qaf.automation.ui.BrowserGlobal import _get_driver, _get_wait, _attach_screenshot
     QAF_AVAILABLE = True
 except ImportError:
     QAF_AVAILABLE = False
+
+# Pattern locator temporarily disabled for new implementation
+get_pattern_locator = None
 
 # Global data storage for Web module
 _page_context = {}
