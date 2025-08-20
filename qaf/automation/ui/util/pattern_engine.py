@@ -329,6 +329,67 @@ class PatternEngine:
     def get_pattern_code(self) -> str:
         """Get the pattern code prefix"""
         return self.pattern_code
+    
+    # Element type methods - 15 most common elements
+    def button(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for button element"""
+        return self._get_locator(page, "button", field_name, field_value)
+    
+    def input(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for input element"""
+        return self._get_locator(page, "input", field_name, field_value)
+    
+    def link(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for link element"""
+        return self._get_locator(page, "link", field_name, field_value)
+    
+    def checkbox(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for checkbox element"""
+        return self._get_locator(page, "checkbox", field_name, field_value)
+    
+    def radio(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for radio button element"""
+        return self._get_locator(page, "radio", field_name, field_value)
+    
+    def select(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for select dropdown element"""
+        return self._get_locator(page, "select", field_name, field_value)
+    
+    def textarea(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for textarea element"""
+        return self._get_locator(page, "textarea", field_name, field_value)
+    
+    def label(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for label element"""
+        return self._get_locator(page, "label", field_name, field_value)
+    
+    def text(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for text element"""
+        return self._get_locator(page, "text", field_name, field_value)
+    
+    def table(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for table element"""
+        return self._get_locator(page, "table", field_name, field_value)
+    
+    def image(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for image element"""
+        return self._get_locator(page, "image", field_name, field_value)
+    
+    def div(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for div element"""
+        return self._get_locator(page, "div", field_name, field_value)
+    
+    def span(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for span element"""
+        return self._get_locator(page, "span", field_name, field_value)
+    
+    def form(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for form element"""
+        return self._get_locator(page, "form", field_name, field_value)
+    
+    def element(self, page: str, field_name: str, field_value: str = None) -> str:
+        """Generate locator for generic element"""
+        return self._get_locator(page, "element", field_name, field_value)
 
 
 # Singleton instance for global access
