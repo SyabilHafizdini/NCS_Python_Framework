@@ -127,17 +127,15 @@ class PatternEngine:
         get_bundle().set_property("loc.auto.fieldValue", "")
         
         # Generate camelCase locator name matching Java implementation
-        # Pattern: {pattern_code}.{camelCasePage}.{camelCaseElementType}.{camelCaseFieldName}
-        page_camel = CaseConverter.to_camel_case_java_exact(
-            page.replace("[^a-zA-Z0-9]", " ") if hasattr(page, 'replace') else page, 
-            False
-        )
-        field_type_clean = field_type.replace("d365_", "").replace("[^a-zA-Z0-9]", " ") if hasattr(field_type, 'replace') else field_type
+        # Exact replication of Java: CaseUtils.toCamelCase(argPageName.replaceAll("[^a-zA-Z0-9]", " "), false, ' ')
+        import re
+        page_clean = re.sub(r'[^a-zA-Z0-9]', ' ', page)
+        field_type_clean = re.sub(r'[^a-zA-Z0-9]', ' ', field_type.replace("d365_", ""))
+        field_name_clean = re.sub(r'[^a-zA-Z0-9]', ' ', field_name)
+        
+        page_camel = CaseConverter.to_camel_case_java_exact(page_clean, False)
         field_type_camel = CaseConverter.to_camel_case_java_exact(field_type_clean, False)
-        field_name_camel = CaseConverter.to_camel_case_java_exact(
-            field_name.replace("[^a-zA-Z0-9]", " ") if hasattr(field_name, 'replace') else field_name,
-            False
-        )
+        field_name_camel = CaseConverter.to_camel_case_java_exact(field_name_clean, False)
         
         locator_name = f"{self.pattern_code}.{page_camel}.{field_type_camel}.{field_name_camel}"
         
@@ -149,6 +147,33 @@ class PatternEngine:
             return None
         
         return locator_value
+    
+    def _check_alternative_locator_names(self, page: str, field_type: str, field_name: str) -> Optional[str]:
+        """
+        Check alternative naming patterns for locators
+        Matches Java implementation's fallback locator checking
+        
+        Args:
+            page: Page name
+            field_type: Element type 
+            field_name: Field name
+            
+        Returns:
+            Alternative locator if found, None otherwise
+        """
+        # Alternative naming patterns to try
+        alt_keys = [
+            f"{page}.{field_name}",
+            f"{field_name}.{field_type}",
+            f"{field_name}"
+        ]
+        
+        for alt_key in alt_keys:
+            alt_locator = get_bundle().get_string(alt_key)
+            if alt_locator and alt_locator != alt_key and len(alt_locator) >= 5:
+                return alt_locator
+        
+        return None
     
     def _generate_dynamic_locator(self, field_type: str, field_name: str, field_value: str = None) -> Optional[str]:
         """
@@ -203,8 +228,9 @@ class PatternEngine:
         """
         Core method that implements the locator resolution logic:
         1. Check for hardcoded locator
-        2. Generate dynamic locator if no hardcoded version exists
-        3. Return appropriate locator string
+        2. Check alternative locator naming patterns  
+        3. Generate dynamic locator if no hardcoded version exists
+        4. Return appropriate locator string
         
         Args:
             page: Page name for locator context
@@ -215,19 +241,82 @@ class PatternEngine:
         Returns:
             Locator string (either hardcoded or generated)
         """
-        # First check for hardcoded locator
+        # Step 1: Check for primary hardcoded locator
         hardcoded_locator = self._check_hardcoded_locator(page, field_type, field_name)
         if hardcoded_locator:
             return hardcoded_locator
         
-        # Generate dynamic locator using patterns
+        # Step 2: Check alternative locator naming patterns
+        alternative_locator = self._check_alternative_locator_names(page, field_type, field_name)
+        if alternative_locator:
+            return alternative_locator
+        
+        # Step 3: Generate dynamic locator using patterns
         dynamic_locator = self._generate_dynamic_locator(field_type, field_name, field_value)
         if dynamic_locator:
             return dynamic_locator
         
-        # Fallback - return a basic XPath pattern
+        # Step 4: Ultimate fallback - return a basic XPath pattern
         clean_field_name = FieldParser.extract_field_name(field_name)
         return f"xpath=//*[contains(text(),'{clean_field_name}')]"
+    
+    def _generate_property_key(self, page: str, field_type: str, field_name: str) -> str:
+        """
+        Generate property key using camelCase conversion
+        Matches exact Java implementation logic
+        
+        Args:
+            page: Page name
+            field_type: Element type
+            field_name: Field name
+            
+        Returns:
+            Generated property key in format: {pattern_code}.{page}.{type}.{field}
+        """
+        import re
+        
+        # Clean inputs by removing non-alphanumeric characters (matching Java regex)
+        page_clean = re.sub(r'[^a-zA-Z0-9]', ' ', page)
+        field_type_clean = re.sub(r'[^a-zA-Z0-9]', ' ', field_type.replace("d365_", ""))
+        field_name_clean = re.sub(r'[^a-zA-Z0-9]', ' ', field_name)
+        
+        # Convert to camelCase using exact Java behavior
+        page_camel = CaseConverter.to_camel_case_java_exact(page_clean, False)
+        field_type_camel = CaseConverter.to_camel_case_java_exact(field_type_clean, False)
+        field_name_camel = CaseConverter.to_camel_case_java_exact(field_name_clean, False)
+        
+        return f"{self.pattern_code}.{page_camel}.{field_type_camel}.{field_name_camel}"
+    
+    def resolve_locator(self, page: str, field_type: str, field_name: str, field_value: str = None) -> str:
+        """
+        Public method to resolve locator with comprehensive logging
+        
+        Args:
+            page: Page name for locator context
+            field_type: Element type
+            field_name: Field name to locate  
+            field_value: Optional field value for patterns
+            
+        Returns:
+            Resolved locator string
+        """
+        try:
+            result = self._get_locator(page, field_type, field_name, field_value)
+            
+            # Log successful resolution
+            print(f"Pattern locator resolved: {page}.{field_type}.{field_name} -> {result[:100]}...")
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error resolving pattern locator for {page}.{field_type}.{field_name}: {e}")
+            
+            # Return fallback locator
+            clean_field_name = FieldParser.extract_field_name(field_name)
+            fallback = f"xpath=//*[contains(text(),'{clean_field_name}')]"
+            print(f"Using fallback locator: {fallback}")
+            
+            return fallback
     
     def get_pattern_types(self) -> List[str]:
         """Get list of available pattern types"""
