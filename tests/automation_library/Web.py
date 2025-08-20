@@ -305,3 +305,50 @@ def _find_element_using_locator(locator: str, element_type: str, field_name: str
         error_msg = f"Element location failed for {page_name}.{element_type}.{field_name}: {e}"
         allure.attach(error_msg, name="Element Location Error", attachment_type=allure.attachment_type.TEXT)
         raise NoSuchElementException(error_msg) from e
+
+
+@allure.step("Web: Input-Text Value:{input_value} Field:{field_name}")
+def input_text_pattern_reflection(input_value: str, field_name: str, page: str = None):
+    """
+    Web: Input-Text Value:{input_value} Field:{field_name}
+    
+    Reflection-based step definition for text input using PatternEngine.input() method
+    
+    Args:
+        input_value: Text value to input
+        field_name: Field name to locate 
+        page: Optional page name (uses current page context if not provided)
+    """
+    try:
+        pattern_engine = _get_pattern_engine()
+        page_name = page or _page_context.get('current_page', 'genericPage')
+        
+        # Use reflection to get the input method from PatternEngine
+        if not hasattr(pattern_engine, 'input'):
+            raise WebError("NoSuchMethodException: PatternEngine has no method 'input'")
+        
+        input_method = getattr(pattern_engine, 'input')
+        if not callable(input_method):
+            raise WebError("PatternEngine.input is not callable")
+        
+        # Log successful method resolution
+        allure.attach("Found function input in PatternEngine!", 
+                     name="Method Resolution Success", attachment_type=allure.attachment_type.TEXT)
+        
+        # Generate locator and find element
+        locator = input_method(page_name, field_name)
+        element = _find_element_using_locator(locator, 'input', field_name, page_name)
+        
+        # Clear field and enter value
+        element.clear()
+        element.send_keys(input_value)
+        _attach_screenshot(f"Input Text - {field_name}")
+        
+        allure.attach(f"Successfully input '{input_value}' into field '{field_name}' on page '{page_name}'", 
+                     name="Input Action Success", attachment_type=allure.attachment_type.TEXT)
+        
+    except Exception as e:
+        error_msg = f"Failed to input text into field '{field_name}': {e}"
+        allure.attach(error_msg, name="Input Action Error", attachment_type=allure.attachment_type.TEXT)
+        _attach_screenshot(f"Error - Input {field_name}")
+        raise WebError(error_msg) from e
